@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LeafyCheck 🌿</title>
+    <style>
+        /* The "Latte" Aesthetic */
+        body { background-color: #FFFDF2; font-family: 'Segoe UI', sans-serif; text-align: center; color: #5E3023; }
+        .container { margin-top: 50px; padding: 20px; border-radius: 20px; background: white; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        button { background-color: #848469; color: white; border: none; padding: 15px 30px; border-radius: 30px; cursor: pointer; font-size: 16px; margin: 10px; }
+        #webcam-container { border: 5px solid #C4AD9D; border-radius: 20px; overflow: hidden; margin: 20px auto; width: 200px; }
+        #label-container { font-size: 24px; font-weight: bold; margin-top: 20px; color: #848469; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🌿 LeafyCheck</h1>
+        <p>Is your plant friend happy or thirsty?</p>
+        <button type="button" onclick="init()">Start Scanner</button>
+        <div id="webcam-container"></div>
+        <div id="label-container"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <script type="https://teachablemachine.withgoogle.com/models/">
+        // Paste your link from Teachable Machine here
+        const URL = "https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/";
+
+        let model, webcam, labelContainer, maxPredictions;
+
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            // Setup Webcam
+            const flip = true; 
+            webcam = new tmImage.Webcam(200, 200, flip); 
+            await webcam.setup(); 
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            labelContainer = document.getElementById("label-container");
+        }
+
+        async function loop() {
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+            // logic to show the "cutest" result
+            let topResult = "";
+            let highestProb = 0;
+
+            for (let i = 0; i < maxPredictions; i++) {
+                if(prediction[i].probability > highestProb) {
+                    highestProb = prediction[i].probability;
+                    topResult = prediction[i].className;
+                }
+            }
+
+            // Change icons based on result
+            if(topResult === "Thirsty") {
+                labelContainer.innerHTML = "🥀 Water me please!";
+            } else if(topResult === "Happy") {
+                labelContainer.innerHTML = "✨ I'm feeling great!";
+            } else {
+                labelContainer.innerHTML = "☁️ Waiting for plant...";
+            }
+        }
+    </script>
+</body>
+</html>
